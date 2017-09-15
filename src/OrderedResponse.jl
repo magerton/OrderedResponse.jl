@@ -132,6 +132,20 @@ for dist in (:logistic, :norm)
 
   # -------------------------------------------------------------------
 
+  if l == 1
+      z = γ[1] - η
+      return z - log1pexp(z)
+  elseif l == length(γ)+1
+      z = γ[end] - η
+      return - log1pexp(z)
+  else
+      p2 = logistic(γ[l] - η)
+      p1 = logistic(γ[l-1] - η)
+      return log(p2 - p1)
+  end
+  logisticlogcdf(z::Real)  = z - log1pexp(z)
+  logisticlogccdf(z::Real) =   - log1pexp(z)
+
 
   # simple inner LL
   blk = quote
@@ -155,7 +169,10 @@ for dist in (:logistic, :norm)
           η2 = l == L+1 ?  Inf : γ[l]   - η
 
           if l == 1
-              F
+              F = $(cdf)(η2)
+              LL = $(ldcf)(η2)
+          elseif l == L+1
+              F = $(ccdf)(η1)
           F = $(cdf)(η2) - $(cdf)(η1)
           LL = log(F)
 

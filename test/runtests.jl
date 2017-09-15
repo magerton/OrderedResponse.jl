@@ -25,30 +25,29 @@ py = proportions(y)
 tmpη = Array{eltype(X)}(n)
 tmpgrad = Vector{Float64}(length(θ0))
 
+# -------------- closures for testing ---------
+
+f1(θ::Vector)                = logisticLL!(                                    tmpη, y, X, θ[1:2], θ[3:4])
+f2(θ::Vector)                = logisticLLgrad!(zeros(0), zeros(0,0), zeros(0), tmpη, y, X, θ[1:2], θ[3:4])
+g!(grad::Vector, θ::Vector)  = logisticLLgrad!(grad    , zeros(0,0), tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
+h!(hess::Matrix, θ::Vector)  = logisticLLgrad!(zeros(4),       hess, tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
+
+function g(θ::Vector)
+    grad = similar(θ)
+    g!(grad, θ)
+    return grad
+end
+
+function h(θ::Vector)
+    grad = similar(θ)
+    hess = Matrix{eltype(grad)}(length(grad), length(grad))
+    h!(hess, θ)
+    return hess
+end
+
+# --------- check that LL functions are the same ---------
 
 for dist in (:norm, :logistic)
-
-    # -------------- closures for testing ---------
-
-    f1(θ::Vector)                = logisticLL!(                                    tmpη, y, X, θ[1:2], θ[3:4])
-    f2(θ::Vector)                = logisticLLgrad!(zeros(0), zeros(0,0), zeros(0), tmpη, y, X, θ[1:2], θ[3:4])
-    g!(grad::Vector, θ::Vector)  = logisticLLgrad!(grad    , zeros(0,0), tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
-    h!(hess::Matrix, θ::Vector)  = logisticLLgrad!(zeros(4),       hess, tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
-
-    function g(θ::Vector)
-        grad = similar(θ)
-        g!(grad, θ)
-        return grad
-    end
-
-    function h(θ::Vector)
-        grad = similar(θ)
-        hess = Matrix{eltype(grad)}(length(grad), length(grad))
-        h!(hess, θ)
-        return hess
-    end
-
-    # --------- check that LL functions are the same ---------
 
     @test f1(θ0) ≈ f2(θ0)
 
