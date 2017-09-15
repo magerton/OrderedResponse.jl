@@ -37,10 +37,10 @@ function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton()
 
     # closures for optim
     td = Optim.TwiceDifferentiable(
-        (θ::Vector)               -> LL!(zeros(T,0)   , zeros(T,0,0), zeros(0), η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0),
-        (grad::Vector, θ::Vector) -> LL!(grad         , zeros(T,0,0), tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0),
-        (grad::Vector, θ::Vector) -> LL!(grad         , zeros(T,0,0), tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0),
-        (hess::Matrix, θ::Vector) -> LL!(zeros(T,KLm1),         hess, tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0)
+        (θ::Vector)               -> orLL!(zeros(T,0)   , zeros(T,0,0), zeros(0), η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0),
+        (grad::Vector, θ::Vector) -> orLL!(grad         , zeros(T,0,0), tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0),
+        (grad::Vector, θ::Vector) -> orLL!(grad         , zeros(T,0,0), tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0),
+        (hess::Matrix, θ::Vector) -> orLL!(zeros(T,KLm1),         hess, tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0)
     )
 
     opt =  Optim.optimize(td, θ0, method, Optim.Options(;kwargs...))
@@ -49,7 +49,7 @@ function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton()
     hess = zeros(T, KLm1, KLm1)
     grad = similar(tmpgrad)
     θfinal = opt.minimizer
-    LL = LL!(grad, hess, tmpgrad, η, y, X, θfinal[1:k], θfinal[k+1:end], Val{model}, -1.0)
+    LL = orLL!(grad, hess, tmpgrad, η, y, X, θfinal[1:k], θfinal[k+1:end], Val{model}, -1.0)
 
     return (LL, grad, hess, opt)
 

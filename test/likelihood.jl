@@ -21,9 +21,9 @@ for model in (:logit, :probit,)
 
     # function LL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector, model::Type{Val{D}}, sgn::Real=-one(T)) where {D,T}
 
-    f(θ::Vector)                = OrderedResponse.LL!(zeros(0), zeros(0,0), zeros(0), tmpη, y, X, θ[1:2], θ[3:4], Val{model}, -1.0)
-    g!(grad::Vector, θ::Vector) = OrderedResponse.LL!(grad    , zeros(0,0), tmpgrad , tmpη, y, X, θ[1:2], θ[3:4], Val{model}, -1.0)
-    h!(hess::Matrix, θ::Vector) = OrderedResponse.LL!(zeros(4),       hess, tmpgrad , tmpη, y, X, θ[1:2], θ[3:4], Val{model}, -1.0)
+    f(θ::Vector)                = OrderedResponse.orLL!(zeros(0), zeros(0,0), zeros(0), tmpη, y, X, θ[1:2], θ[3:4], Val{model}, -1.0)
+    g!(grad::Vector, θ::Vector) = OrderedResponse.orLL!(grad    , zeros(0,0), tmpgrad , tmpη, y, X, θ[1:2], θ[3:4], Val{model}, -1.0)
+    h!(hess::Matrix, θ::Vector) = OrderedResponse.orLL!(zeros(4),       hess, tmpgrad , tmpη, y, X, θ[1:2], θ[3:4], Val{model}, -1.0)
 
     function g(θ::Vector)
         grad = similar(θ)

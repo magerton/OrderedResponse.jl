@@ -1,7 +1,9 @@
+export orLLi!
+
 # --------- likelihoods ----------
 
 "likelihood of data"
-function LL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector, model::Type{Val{D}}, sgn::Real=-one(T)) where {D,T}
+function orLL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector, model::Type{Val{D}}, sgn::Real=-one(T)) where {D,T}
 
   # # ---------- SAFETY CHECKS ---------------
   D ∈ (:probit, :logit) || throw(error("Can only do :probit or :logit model"))
@@ -24,7 +26,7 @@ function LL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y::V
 
   LL = zero(T)
   for j in Base.OneTo(length(y))
-      LL += LLi!(grad, hess, tmpgrad, y[j], η[j], @view(X[:,j]), γ, model)
+      LL += orLLi!(grad, hess, tmpgrad, y[j], η[j], @view(X[:,j]), γ, model)
   end
 
   # flip signs of these
@@ -39,7 +41,7 @@ end
 
 
 "observation-specific likelihood"
-function LLi!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, l::Integer, η::Real, x::AbstractVector, γ::Vector, model::Type) where {T}
+function orLLi!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, l::Integer, η::Real, x::AbstractVector, γ::Vector, model::Type) where {T}
   L = length(γ)
   k = length(x)
   η1 = l == 1   ? -Inf : γ[l-1] - η
