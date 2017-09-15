@@ -60,14 +60,14 @@ logisticccdf(z::Real) = one(z) - logistic(z)
 
 logisticlogcdf(z::Real)  = z - log1pexp(z)
 logisticlogccdf(z::Real) =   - log1pexp(z)
-
-# dlogcdf
-dlogisticlogcdf(z::Real)  = one(z) - logistic(z)
-dlogisticlogccdf(z::Real) =        - logistic(z)
-
-# d2logcdf
-d2logisticlogcdf(z::Real)  = - logisticpdf(z)
-d2logisticlogccdf(z::Real) = - logisticpdf(z)
+#
+# # dlogcdf
+# dlogisticlogcdf(z::Real)  = one(z) - logistic(z)
+# dlogisticlogccdf(z::Real) =        - logistic(z)
+#
+# # d2logcdf
+# d2logisticlogcdf(z::Real)  = - logisticpdf(z)
+# d2logisticlogccdf(z::Real) = - logisticpdf(z)
 
 # --------- norml ----------
 
@@ -91,13 +91,47 @@ end
 for dist in (:logistic, :norm)
   llfun = Symbol("$(dist)LL")
   llfun! = Symbol("$(dist)LL!")
-  llgrad! = Symbol("$(dist)LLgrad!")
-  llgradinner! = Symbol("$(dist)LLgradinner!")
-  lcdf = Symbol("$(dist)logcdf")
+
+  lcdf  = Symbol("$(dist)logcdf")
   lccdf = Symbol("$(dist)logccdf")
-  cdf = Symbol("$(dist)cdf")
-  pdf = Symbol("$(dist)pdf")
-  dpdf = Symbol("d$(dist)pdf")
+  cdf   = Symbol("$(dist)cdf")
+  pdf   = Symbol("$(dist)pdf")
+  dpdf  = Symbol("d$(dist)pdf")
+
+  blk = quote
+      function $(llfun!)(grad::Vector, hess::Matrix, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector)
+
+          length(grad) > 0 && (grad .= 0.0)
+          length(hess) > 0 && (hess .= 0.0)
+
+          k,n = size(X)
+          L = num_categories(y)
+
+          length(β) == k    || throw(DimensionMismatch())
+          length(γ) == L-1  || throw(DimensionMismatch())
+          length(η) == n    || throw(DimensionMismatch())
+          all(X[:,1] .== 1.0) && throw(error("X cannot have intercept"))
+
+          any(diff(γ) .<= 0.0)  && return -Inf
+
+          At_mul_B!(η, X, β)  # update η
+
+          LL = 0.0
+          for i in 1:n
+              LL += $(llgradinner!)(grad, hess, tmpgrad, y[i], η[i], X[i,:], γ)
+          end
+
+          length(grad) > 0  && (grad .*= -1.0)
+          length(hess) > 0  && (hess .*= -1.0)
+
+          return -LL
+      end
+  end
+
+  eval(blk)
+
+  # -------------------------------------------------------------------
+
 
   # simple inner LL
   blk = quote
@@ -112,27 +146,6 @@ for dist in (:logistic, :norm)
 
   eval(blk)
 
-  # simple outer LL
-  blk = quote
-      function $(llfun!)(η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector)
-
-          n,k = size(X)
-          L = num_categories(y)
-
-          length(β) == k    || throw(DimensionMismatch())
-          length(γ) == L-1  || throw(DimensionMismatch())
-          length(η) == n    || throw(DimensionMismatch())
-          all(X[:,1] .== 1.0) && throw(error("X cannot have intercept"))
-
-          any(diff(γ) .<= 0.0)  && return -Inf
-
-          A_mul_B!(η, X, β)  # update η
-          return - sum($(llfun)(x..., γ) for x in zip(y, η))
-      end
-  end
-
-  eval(blk)
-
   # inner w/ Grad
   blk = quote
       function $(llgradinner!)(grad::Vector, hess::Matrix, tmpgrad::Vector, l::Integer, η::Real, x::AbstractVector, γ::Vector)
@@ -141,9 +154,9 @@ for dist in (:logistic, :norm)
           η1 = l == 1   ? -Inf : γ[l-1] - η
           η2 = l == L+1 ?  Inf : γ[l]   - η
 
-          F1 = $(cdf)(η1)
-          F2 = $(cdf)(η2)
-          F  = F2 - F1
+          if l == 1
+              F
+          F = $(cdf)(η2) - $(cdf)(η1)
           LL = log(F)
 
           if length(grad) > 0
@@ -179,37 +192,6 @@ for dist in (:logistic, :norm)
           end
 
           return LL
-      end
-  end
-
-  eval(blk)
-
-  blk = quote
-      function $(llgrad!)(grad::Vector, hess::Matrix, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector)
-
-          length(grad) > 0 && (grad .= 0.0)
-          length(hess) > 0 && (hess .= 0.0)
-
-          n,k = size(X)
-          L = num_categories(y)
-
-          length(β) == k    || throw(DimensionMismatch())
-          length(γ) == L-1  || throw(DimensionMismatch())
-          length(η) == n    || throw(DimensionMismatch())
-          all(X[:,1] .== 1.0) && throw(error("X cannot have intercept"))
-
-          any(diff(γ) .<= 0.0)  && return -Inf
-
-          A_mul_B!(η, X, β)  # update η
-
-          LL = 0.0
-          for i in 1:n
-              LL += $(llgradinner!)(grad, hess, tmpgrad, y[i], η[i], X[i,:], γ)
-          end
-
-          grad .*= -1.0
-          hess .*= -1.0
-          return -LL
       end
   end
 

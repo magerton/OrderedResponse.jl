@@ -1,4 +1,4 @@
-using OrderedResponse
+# using OrderedResponse
 using Optim
 # using StatsBase
 using StatsFuns
@@ -25,54 +25,57 @@ py = proportions(y)
 tmpη = Array{eltype(X)}(n)
 tmpgrad = Vector{Float64}(length(θ0))
 
-# -------------- closures for testing ---------
 
-f1(θ::Vector)                = normLL!(                                    tmpη, y, X, θ[1:2], θ[3:4])
-f2(θ::Vector)                = normLLgrad!(zeros(0), zeros(0,0), zeros(0), tmpη, y, X, θ[1:2], θ[3:4])
-g!(grad::Vector, θ::Vector)  = normLLgrad!(grad    , zeros(0,0), tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
-h!(hess::Matrix, θ::Vector)  = normLLgrad!(zeros(4),       hess, tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
+for dist in (:norm, :logistic)
 
-function g(θ::Vector)
-    grad = similar(θ)
-    g!(grad, θ)
-    return grad
-end
+    # -------------- closures for testing ---------
 
-function h(θ::Vector)
-    grad = similar(θ)
-    hess = Matrix{eltype(grad)}(length(grad), length(grad))
-    h!(hess, θ)
-    return hess
-end
+    f1(θ::Vector)                = logisticLL!(                                    tmpη, y, X, θ[1:2], θ[3:4])
+    f2(θ::Vector)                = logisticLLgrad!(zeros(0), zeros(0,0), zeros(0), tmpη, y, X, θ[1:2], θ[3:4])
+    g!(grad::Vector, θ::Vector)  = logisticLLgrad!(grad    , zeros(0,0), tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
+    h!(hess::Matrix, θ::Vector)  = logisticLLgrad!(zeros(4),       hess, tmpgrad , tmpη, y, X, θ[1:2], θ[3:4])
 
-# --------- check that LL functions are the same ---------
+    function g(θ::Vector)
+        grad = similar(θ)
+        g!(grad, θ)
+        return grad
+    end
 
-@test f1(θ0) ≈ f2(θ0)
+    function h(θ::Vector)
+        grad = similar(θ)
+        hess = Matrix{eltype(grad)}(length(grad), length(grad))
+        h!(hess, θ)
+        return hess
+    end
 
-optf1 = Optim.optimize(f1, θ0)
-optf2 = Optim.optimize(f2, θ0)
+    # --------- check that LL functions are the same ---------
 
-@test optf2.minimizer ≈ optf1.minimizer
-@test norm(optf1.minimizer .- θstata_norm, Inf) < 3e-6
-@test norm(optf2.minimizer .- θstata_norm, Inf) < 3e-6
+    @test f1(θ0) ≈ f2(θ0)
 
-# --------- opt with derivatives ---------
+    optf1 = Optim.optimize(f1, θ0)
+    optf2 = Optim.optimize(f2, θ0)
 
-@test Calculus.derivative(f2, θ0) ≈ g(θ0)
+    @test optf2.minimizer ≈ optf1.minimizer
+    @test norm(optf1.minimizer .- θpolr_logistic, Inf) < 3e-6
+    @test norm(optf2.minimizer .- θpolr_logistic, Inf) < 3e-6
 
-optg = Optim.optimize(f2, g!, θ0)
-@test norm(optg.minimizer .- θstata_norm, Inf) < 3e-6
-@show optg.minimizer .- θpolr_norm
+    # --------- opt with derivatives ---------
 
-# -------- newton-rhapson ------------
+    @test Calculus.derivative(f2, θ0) ≈ g(θ0)
 
-opth = Optim.optimize(f2, g!, h!, θ0)
-vcov = h(opth.minimizer)\eye(4)
+    optg = Optim.optimize(f2, g!, θ0)
+    @test norm(optg.minimizer .- θpolr_logistic, Inf) < 1e-7
+    @show optg.minimizer .- θpolr_logistic
 
-@test norm(opth.minimizer .- θstata_norm, Inf) < 3e-6
-@test norm((vcov .- vcovstata_norm)[:], Inf) < 1e-8
-@show opth.minimizer .- θpolr_norm
-@show sqrt.(diag(vcov)) .- sqrt.(diag(vcovstata_norm))
+    # -------- newton-rhapson ------------
+
+    opth = Optim.optimize(f2, g!, h!, θ0)
+    vcov = h(opth.minimizer)\eye(4)
+
+    @test norm(opth.minimizer .- θpolr_logistic, Inf) < 1e-7
+    @test norm((vcov .- vcovpolr_logistic)[:], Inf) < 3e-4
+    @show opth.minimizer .- θpolr_logistic
+    @show sqrt.(diag(vcov)) .- sqrt.(diag(vcovstata_logistic))
 
 
 
