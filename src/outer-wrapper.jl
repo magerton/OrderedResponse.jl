@@ -5,7 +5,12 @@ response_vec(y::DataVector{<:Integer}) = Vector(y)
 response_vec(mf::ModelFrame) = response_vec(mf.df[:,mf.terms.eterms[1]])
 
 """
-    Estimate ordered response of variety `model ∈ (:logit, :probit)` with specification `fm` and `data`. Optim options passed with `kwargs`
+    orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton(), kwargs...)
+
+Estimate ordered response model of variety `model ∈ (:logit, :probit)` with specification
+`fm` and `data`. Optim options passed with `kwargs`. Set the optimizer with `method`.
+Returns a tuple with negative log likelihood, gradient, hessian, and optimization results
+`(LL::Real, grad::Vector, hess::Matrix, opt::Optim.MultivariateOptimizationResults)`
 """
 function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton(), kwargs...)
 
@@ -38,6 +43,14 @@ function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton()
         (hess::Matrix, θ::Vector) -> LL!(zeros(T,KLm1),         hess, tmpgrad , η, y, X, θ[1:k], θ[k+1:end], Val{model}, -1.0)
     )
 
-    return Optim.optimize(td, θ0, method, Optim.Options(;kwargs...))
+    opt =  Optim.optimize(td, θ0, method, Optim.Options(;kwargs...))
+
+    # final eval
+    hess = zeros(T, KLm1, KLm1)
+    grad = similar(tmpgrad)
+    θfinal = opt.minimizer
+    LL = LL!(grad, hess, tmpgrad, η, y, X, θfinal[1:k], θfinal[k+1:end], Val{model}, -1.0)
+
+    return (LL, grad, hess, opt)
 
 end

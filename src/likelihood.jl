@@ -46,16 +46,16 @@ function LLi!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, l::Integer, η:
   η2 = l == L+1 ?  Inf : γ[l]   - η
 
   # LL takes a short-cut to improve accuracy if l == 1 or L+1
-  # if l == 1
-  #     F = cdf(η2, model)
-  #     LL = logcdf(η2, model)
-  # elseif l == L+1
-  #     F = ccdf(η1, model)
-  #     LL = logccdf(η1, model)
-  # else
+  if l == 1
+      F = cdf(η2, model)
+      LL = logcdf(η2, model)
+  elseif l == L+1
+      F = ccdf(η1, model)
+      LL = logccdf(η1, model)
+  else
       F = cdf(η2, model) - cdf(η1, model)
       LL = log(F)
-  # end
+  end
 
   if length(grad) > 0
       dlogF1 = pdf(η1, model) / F
