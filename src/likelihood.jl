@@ -62,12 +62,20 @@ function LLi!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, l::Integer, η:
       dlogF2 = pdf(η2, model) / F
       dlogF  = dlogF2 - dlogF1
 
-      tmpgrad[1:k] .= - dlogF .* x
-      tmpgrad[k+1:end] .= zero(T)
-      l > 1    && (tmpgrad[k+l-1] -= dlogF1)
-      l < L+1  && (tmpgrad[k+l]   += dlogF2)
+      # so that we can update grad directly if no hessian
+      if length(hess) == 0
+          tmpgrad2 = grad
+      else
+          tmpgrad2 = tmpgrad
+          tmpgrad .= 0.0
+      end
 
-      grad .+= tmpgrad
+      tmpgrad2[1:k] .-= dlogF .* x
+      l > 1    && (tmpgrad2[k+l-1] -= dlogF1)
+      l < L+1  && (tmpgrad2[k+l]   += dlogF2)
+
+      # update actual gradient vector if computing hessian
+      length(hess) > 0 && (grad .+= tmpgrad)
   end
 
   if length(hess) > 0
