@@ -34,7 +34,7 @@ d2logccdf(z::Real, ::Type{Val{:logit}}) = - pdf(z, Val{:logit})
 cdf(     z::Real, ::Type{Val{:probit}}) = normcdf(z)
 ccdf(    z::Real, ::Type{Val{:probit}}) = normccdf(z)
 invcdf(  z::Real, ::Type{Val{:probit}}) = norminvcdf(z)
-pdf(     z::Real, ::Type{Val{:probit}}) = normpdf(z)
+pdf(     z::Real, ::Type{Val{:probit}}) = isfinite(z) ?      normpdf(z) : zero(z)
 dpdf(    z::Real, ::Type{Val{:probit}}) = isfinite(z) ? -z * normpdf(z) : zero(z)
 
 logcdf(  z::Real, ::Type{Val{:probit}}) = normlogcdf(z)
