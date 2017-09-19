@@ -4,6 +4,12 @@ response_vec(y::PooledDataVector) = y.refs
 response_vec(y::DataVector{<:Integer}) = Vector(y)
 response_vec(mf::ModelFrame) = response_vec(mf.df[:,mf.terms.eterms[1]])
 
+function γinit(y::Vector, model::Symbol)
+    cpy = cumsum(proportions(y))
+    return invcdf.(cpy[1:end-1], Val{model})
+end
+
+
 """
     orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton(), kwargs...)
 
@@ -12,7 +18,7 @@ Estimate ordered response model of variety `model ∈ (:logit, :probit)` with sp
 Returns a tuple with negative log likelihood, gradient, hessian, and optimization results
 `(LL::Real, grad::Vector, hess::Matrix, opt::Optim.MultivariateOptimizationResults)`
 """
-function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton(), kwargs...)
+function orlm(fm::Formula, data::DataFrame, model::Symbol; kwargs...)
 
     model ∈ (:probit, :logit) || throw(error("Can only do :probit or :logit model"))
 
@@ -22,18 +28,29 @@ function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton()
     X = ModelMatrix(mf).m'
     y = response_vec(mf)
 
-    L = num_categories(y)  # also checks that categories are 1:L
-    k, n = size(X)
-    T = eltype(X)
+    return orlm(y, X, model; kwargs...)
 
+end
+
+
+
+
+
+
+function orlm(y::Vector{<:Integer}, X::Matrix{T}, model::Symbol; method=Optim.Newton(), kwargs...) where {T}
+    model ∈ (:probit, :logit) || throw(error("Can only do :probit or :logit model"))
+
+    # check dims
+    k, n = size(X)
+    length(y) == n || throw(DimensionMismatch("length(y) != size(X,2)"))
+
+    L = num_categories(y)  # also checks that categories are 1:L
     KLm1 = k+L-1
     θ0 = zeros(T, KLm1)
+    θ0[k+1:end] = γinit(y, model) # starting values
     tmpgrad = similar(θ0)
     η = Vector{T}(n)
 
-    # starting values for intercept
-    cpy = cumsum(proportions(y))
-    θ0[k+1:end] = invcdf.(cpy[1:end-1], Val{model})
 
     # closures for optim
     td = Optim.TwiceDifferentiable(
@@ -51,6 +68,6 @@ function orlm(fm::Formula, data::DataFrame, model::Symbol; method=Optim.Newton()
     θfinal = opt.minimizer
     LL = orLL!(grad, hess, tmpgrad, η, y, X, θfinal[1:k], θfinal[k+1:end], Val{model}, -1.0)
 
-    return (LL, grad, hess, opt)
+    return (opt.minimizer, LL, grad, hess, opt)
 
 end

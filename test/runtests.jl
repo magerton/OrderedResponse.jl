@@ -16,7 +16,11 @@ include("likelihood.jl")
 # test outer wrapper
 fm = @formula(y ~ 0 + x1 + x2)
 mf = ModelFrame(fm, df)
-OrderedResponse.response_vec(mf)
+y = OrderedResponse.response_vec(mf)
+X = ModelMatrix(mf).m'
+
+orlm(y, X, :logit)
+orlm(y, X, :probit)
 
 orlm(fm, df, :logit)
 orlm(fm, df, :probit)
