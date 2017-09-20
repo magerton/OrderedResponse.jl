@@ -14,9 +14,15 @@ tmpgrad = Vector{Float64}(length(θ0))
 
 # --------- check that LL functions are the same ---------
 
-for model in (:logit, :probit,)
+for model in (:probit, :logit)
 
     @show model
+
+    for z in -10.:10.
+        @test abs(Calculus.gradient((x) -> OrderedResponse.cdf(x, Val{model}), z) - OrderedResponse.pdf(z, Val{model})) < 1e-5
+        @test abs(Calculus.hessian( (x) -> OrderedResponse.cdf(x, Val{model}), z) - OrderedResponse.dpdf(z, Val{model})) < 1e-5
+    end
+
     # ------------- closures ---------------
 
     # function LL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector, model::Type{Val{D}}, sgn::Real=-one(T)) where {D,T}
@@ -56,6 +62,10 @@ for model in (:logit, :probit,)
     @show optg.minimizer .- θpolr(model)
 
     # -------- newton-rhapson ------------
+
+    maxhessdiff = maximum(abs.(Calculus.hessian(f, θ0) .- h(θ0)))
+    println("\nMaximum FD for Hessian in $model model is $maxhessdiff\n")
+    @test maxhessdiff < 0.2
 
     opth = Optim.optimize(f, g!, h!, θ0)
     vcov = h(opth.minimizer)\eye(4)

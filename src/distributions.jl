@@ -16,7 +16,7 @@ function dpdf(z::Real, ::Type{Val{:logit}})
     isfinite(z) || return zero(z)
     F = logistic(z)
     cF = one(z) - F
-    return F * cF * (one(z)-F^2)
+    return F * cF * (one(z)-2*F)
 end
 
 # logcdf
