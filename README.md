@@ -35,3 +35,7 @@ df[:y] = y
 @show orlm(@formula(y ~ 0 + x1 + x2), df, :logit)
 @show orlm(@formula(y ~ 0 + x1 + x2), df, :probit)
 ```
+
+# To extend
+
+To extend this package to other distributions, add the functions `logcdf`, `logcdf`, `cdf`, `pdf`, and `dpdf` to <src/distributions.jl>. Also, make sure to add the model symbol in tests at the beginning of functions & in test file. (It would probably be best to create a global constant with allowed models...)
