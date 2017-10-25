@@ -41,7 +41,7 @@ end
 
 
 "observation-specific likelihood"
-function orLLi!(grad::AbstractVector{T}, hess::AbstractMatrix{T}, tmpgrad::AbstractVector, l::Integer, η::Real, x::AbstractVector, γ::Vector, model::Type) where {T}
+function orLLi!(grad::AbstractVector{T}, hess::AbstractMatrix{T}, tmpgrad::AbstractVector, l::Integer, η::Real, x::AbstractVector, γ::AbstractVector{T}, model::Type) where {T}
   any(diff(γ) .< zero(T))  &&  return -Inf
   L = length(γ)
   k = length(x)
