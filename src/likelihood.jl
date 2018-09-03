@@ -3,7 +3,7 @@ export orLLi!
 # --------- likelihoods ----------
 
 "likelihood of data"
-function orLL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y::Vector{<:Integer}, X::Matrix, β::Vector, γ::Vector, model::Type{Val{D}}, sgn::Real=-one(T)) where {D,T}
+function orLL!(grad::AbstractVector{T}, hess::AbstractMatrix{T}, tmpgrad::AbstractVector, η::AbstractVector, y::AbstractVector{<:Integer}, X::AbstractMatrix, β::AbstractVector, γ::AbstractVector, model::Type{Val{D}}, sgn::Real=-one(T)) where {D,T}
 
   # # ---------- SAFETY CHECKS ---------------
   D ∈ (:probit, :logit) || throw(error("Can only do :probit or :logit model"))
@@ -22,7 +22,7 @@ function orLL!(grad::Vector{T}, hess::Matrix{T}, tmpgrad::Vector, η::Vector, y:
   length(grad) > 0 && (grad .= 0.0)
   length(hess) > 0 && (hess .= 0.0)
 
-  At_mul_B!(η, X, β)  # update η
+  mul!(η, transpose(X), β)  # update η
 
   LL = zero(T)
   for j in Base.OneTo(length(y))
@@ -86,8 +86,8 @@ function orLLi!(grad::AbstractVector{T}, hess::AbstractMatrix{T}, tmpgrad::Abstr
       d2logF2 = dpdf(η2, model) / F
       d2logF  = d2logF2 - d2logF1
 
-      Base.LinAlg.BLAS.ger!(-one(T), tmpgrad, tmpgrad, hess)
-      Base.LinAlg.BLAS.ger!(d2logF, x, x, @view(hess[1:k,1:k]))
+      LinearAlgebra.BLAS.ger!(-one(T), tmpgrad, tmpgrad, hess)
+      LinearAlgebra.BLAS.ger!(d2logF, x, x, @view(hess[1:k,1:k]))
       if l > 1
           hess[k+l-1, 1:k  ] .+= d2logF1 * x
           hess[1:k  , k+l-1] .+= d2logF1 * x

@@ -1,10 +1,14 @@
-__precompile__()
+# __precompile__()
 
 module OrderedResponse
 
 using StatsFuns
 using DataFrames
+using StatsModels
 using Optim
+using LinearAlgebra
+using StatsBase
+using NLSolversBase
 
 function num_categories(y::Vector{<:Integer})
     y0, L = extrema(y)

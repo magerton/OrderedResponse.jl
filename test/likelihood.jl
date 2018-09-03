@@ -1,5 +1,5 @@
-y = Vector(df[:y])
-X = Matrix(df[:,[:x1,:x2]])'
+y = Vector{Int}(df[:y])
+X = Matrix(Matrix{Float64}(df[:,[:x1,:x2]])')
 
 # initial vectors
 k,n = size(X)
@@ -9,8 +9,8 @@ py = proportions(y)
 θ0 = [β0..., γ0...]
 
 # tmp arrays
-tmpη = Array{eltype(X)}(n)
-tmpgrad = Vector{Float64}(length(θ0))
+tmpη = Array{eltype(X)}(undef,n)
+tmpgrad = Vector{Float64}(undef,length(θ0))
 
 # --------- check that LL functions are the same ---------
 
@@ -39,7 +39,7 @@ for model in (:probit, :logit)
 
     function h(θ::Vector)
         grad = similar(θ)
-        hess = Matrix{eltype(grad)}(length(grad), length(grad))
+        hess = Matrix{eltype(grad)}(undef,length(grad), length(grad))
         h!(hess, θ)
         return hess
     end
@@ -68,7 +68,7 @@ for model in (:probit, :logit)
     @test maxhessdiff < 0.2
 
     opth = Optim.optimize(f, g!, h!, θ0)
-    vcov = h(opth.minimizer)\eye(4)
+    vcov = h(opth.minimizer)\Matrix(I,4,4)
 
     @test norm(opth.minimizer .- θpolr(model), Inf) < 1e-7
     @test norm((vcov .- vcovpolr(model))[:], Inf) < 2.7e-4
