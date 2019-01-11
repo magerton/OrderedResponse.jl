@@ -60,10 +60,14 @@ function orLLi!(grad::AbstractVector{T}, hess::AbstractMatrix{T}, tmpgrad::Abstr
       LL = log(F)
   end
 
+# https://github.com/scipy/scipy/blob/a2ffe09aa751749f2372aa13c19c61b2dec5266f/scipy/stats/_continuous_distns.py
+# https://github.com/JuliaStats/Distributions.jl/blob/master/src/truncated/normal.jl
+# https://github.com/cossio/TruncatedNormal.jl/blob/master/notes/normal.pdf
+
   if length(grad) > 0
       dlogF1 = pdf(η1, model) / F
       dlogF2 = pdf(η2, model) / F
-      dlogF  = dlogF2 - dlogF1
+      dlogF  = dlogcdf_trunc(η1,η2,model) # (pdf(η2, model) - pdf(η1, model)) / F  # try using _F1 from truncated/normal.jl
 
       # so that we can update grad directly if no hessian
       if length(hess) == 0

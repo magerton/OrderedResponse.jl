@@ -1,16 +1,26 @@
 # ----------------- logit -----------------
 
-# cdf
-cdf(   z::Real, ::Type{Val{:logit}}) = logistic(z)
-ccdf(  z::Real, ::Type{Val{:logit}}) = one(z) - logistic(z)
-invcdf(z::Real, ::Type{Val{:logit}}) = logit(z)
-
 # pdf
-function pdf(z::Real, ::Type{Val{:logit}})
+function logisticpdf(z::Real)
     isfinite(z) || return zero(z)
     F = logistic(z)
     return F * (one(z) - F)
 end
+
+function logisticcdf(z::Real)
+    isfinite(z)     || return logistic(z)
+    z == typemin(z) || return zero(z)
+    z == typemax(z) || return one(z)
+    throw(DomainError())
+end
+
+
+# cdf
+cdf(   z::Real, ::Type{Val{:logit}}) = logisticcdf(z)
+ccdf(  z::Real, ::Type{Val{:logit}}) = one(z) - logisticcdf(z)
+invcdf(z::Real, ::Type{Val{:logit}}) = logit(z)
+
+@inline pdf(z::Real, ::Type{Val{:logit}}) = logisticpdf(z)
 
 function dpdf(z::Real, ::Type{Val{:logit}})
     isfinite(z) || return zero(z)
@@ -27,6 +37,7 @@ dlogccdf( z::Real, ::Type{Val{:logit}}) =         - logistic(z)
 d2logcdf( z::Real, ::Type{Val{:logit}}) = - pdf(z, Val{:logit})
 d2logccdf(z::Real, ::Type{Val{:logit}}) = - pdf(z, Val{:logit})
 
+dlogcdf_trunc(a::Real, b::Real, ::Type{Val{:logit}}) = (logisticpdf(b) - logisticpdf(a)) / (logisticcdf(b) - logisticcdf(a))
 
 # ----------------- probit -----------------
 
@@ -41,6 +52,8 @@ logcdf(  z::Real, ::Type{Val{:probit}}) = normlogcdf(z)
 logccdf( z::Real, ::Type{Val{:probit}}) = normlogccdf(z)
 dlogcdf( z::Real, ::Type{Val{:probit}}) =   normpdf(z) / normcdf(z)
 dlogccdf(z::Real, ::Type{Val{:probit}}) = - normpdf(z) / normccdf(z)
+
+dlogcdf_trunc(a::Real, b::Real, ::Type{Val{:probit}}) = - sqrt(2/π) * _F1(a/sqrt2, b/sqrt2)
 
 # d2logcdf
 function d2logcdf(z::Real, ::Type{Val{:probit}})

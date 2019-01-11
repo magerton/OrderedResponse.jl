@@ -9,6 +9,8 @@ using CategoricalArrays
 using Test
 using CSV
 using LinearAlgebra
+using StatsFuns
+using Distributions
 
 include("benchmarks.jl")
 
@@ -16,6 +18,16 @@ include("benchmarks.jl")
 # df = CSV.read(joinpath(dirname(pathof(OrderedResponse) * "/data/testdat.csv")))
 
 df = CSV.read("D:/libraries/julia/dev/OrderedResponse" * "/data/testdat.csv")
+
+
+@testset "testing dlogF" begin
+    a, b = (-30.0, -20.5,)
+    F = normcdf(b) - normcdf(a)
+    dlogF  = (normpdf(b) - normpdf(a)) / F  # try using _F1 from truncated/normal.jl
+    dlogF_new = - √(2/π) * Distributions._F1(a/√2, b/√2)
+    @test dlogF ≈ dlogF_new
+end
+
 
 # test functions in "likelihood" file
 include("likelihood.jl")

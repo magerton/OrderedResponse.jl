@@ -9,6 +9,7 @@ using Optim
 using LinearAlgebra
 using StatsBase
 using NLSolversBase
+using Distributions: _F1
 
 function num_categories(y::Vector{<:Integer})
     y0, L = extrema(y)

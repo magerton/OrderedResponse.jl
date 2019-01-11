@@ -14,7 +14,7 @@ tmpgrad = Vector{Float64}(undef,length(θ0))
 
 # --------- check that LL functions are the same ---------
 
-for model in (:probit, :logit)
+for model in (:logit, :probit,)
 
     @show model
 
