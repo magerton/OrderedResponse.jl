@@ -14,13 +14,25 @@ tmpgrad = Vector{Float64}(undef,length(θ0))
 
 # --------- check that LL functions are the same ---------
 
-for model in (:logit, :probit,)
+for model in (:logit,:probit,)
 
     @show model
 
-    for z in -10.:10.
-        @test abs(Calculus.gradient((x) -> OrderedResponse.cdf(x, Val{model}), z) - OrderedResponse.pdf(z, Val{model})) < 1e-5
-        @test abs(Calculus.hessian( (x) -> OrderedResponse.cdf(x, Val{model}), z) - OrderedResponse.dpdf(z, Val{model})) < 1e-5
+    @testset "testing cdf/pdf derivatives for $model" begin
+        for z in -10.:10.
+            fd = Calculus.gradient((x) -> OrderedResponse.cdf(x, Val{model}), z)
+            ad = OrderedResponse.pdf(z, Val{model})
+
+            fh = Calculus.hessian( (x) -> OrderedResponse.cdf(x, Val{model}), z)
+            ah = OrderedResponse.dpdf(z, Val{model})
+
+            @test isapprox(fd, ad, atol=1e-9, rtol=1e-8)
+            @test isapprox(fh, ah, atol=3.79e-7, rtol=1e-5)
+            # @test fd ≈ ad
+            # @test fh ≈ ah
+            @test abs(fd - ad) < 1e-5
+            @test abs(fh - ah) < 1e-5
+        end
     end
 
     # ------------- closures ---------------
@@ -48,15 +60,19 @@ for model in (:logit, :probit,)
 
     optf = Optim.optimize(f, θ0)
     @show optf
+    @test_broken optf.minimizer ≈ θpolr(model)
     @test norm(optf.minimizer .- θpolr(model), Inf) < 3e-5
 
     # --------- opt with derivatives ---------
 
     @test Calculus.derivative(f, θ0) ≈ g(θ0)
+    @test_broken Calculus.derivative(f, optf.minimizer) ≈ g(optf.minimizer)
     @test norm(Calculus.derivative(f, optf.minimizer) .- g(optf.minimizer), Inf) < 1e-5
 
     optg = Optim.optimize(f, g!, θ0)
     @show optg
+    # @test_broken optf.minimizer ≈ optg.minimizer
+    # @test_broken optg.minimizer ≈ θpolr(model)
     @test norm(optf.minimizer .- optg.minimizer, Inf) < 1e-4
     @test norm(optg.minimizer .- θpolr(model), Inf) < 1e-7
     @show optg.minimizer .- θpolr(model)
@@ -72,6 +88,9 @@ for model in (:logit, :probit,)
 
     @test norm(opth.minimizer .- θpolr(model), Inf) < 1e-7
     @test norm((vcov .- vcovpolr(model))[:], Inf) < 2.7e-4
+    # @test_broken opth.minimizer ≈ θpolr(model)
+    @test_broken vcov ≈ vcovpolr(model)
+
     @show opth.minimizer .- θpolr(model)
     @show sqrt.(diag(vcov)) .- sqrt.(diag(vcovstata(model)))
 

@@ -33,10 +33,6 @@ include("benchmarks.jl")
     end
 end
 
-OrderedResponse.logisticcdf(-1)
-OrderedResponse.logisticcdf(1.2)
-
-
 df = CSV.read("D:/libraries/julia/dev/OrderedResponse" * "/data/testdat.csv")
 
 # test functions in "likelihood" file

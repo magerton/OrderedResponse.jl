@@ -3,7 +3,7 @@ export orlm
 response_vec(y::CategoricalArray) = y.refs
 response_vec(y::Vector{Union{Missing,T}}) where {T<:Integer}= Vector{T}(y)
 response_vec(y::Vector{T}) where {T<:Integer} = Vector{Int}(y)
-response_vec(mf::ModelFrame) = response_vec(mf.df[:,mf.terms.eterms[1]])
+response_vec(mf::ModelFrame) = response_vec(mf.df[mf.terms.eterms[1]])
 
 function γinit(y::Vector, model::Symbol)
     cpy = cumsum(proportions(y))

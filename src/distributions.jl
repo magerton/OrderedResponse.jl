@@ -3,8 +3,8 @@
 # pdf
 function logisticpdf(z::Real)
     isfinite(z) || return zero(z)
-    F = logistic(z)
-    return F * (one(z) - F)
+    lz = logistic(-abs(z))
+    return lz * (1 - lz)
 end
 
 function logisticcdf(z::Real)
@@ -17,7 +17,7 @@ end
 
 # cdf
 cdf(   z::Real, ::Type{Val{:logit}}) = logisticcdf(z)
-ccdf(  z::Real, ::Type{Val{:logit}}) = one(z) - logisticcdf(z)
+ccdf(  z::Real, ::Type{Val{:logit}}) = logisticcdf(-z)
 invcdf(z::Real, ::Type{Val{:logit}}) = logit(z)
 
 @inline pdf(z::Real, ::Type{Val{:logit}}) = logisticpdf(z)
@@ -30,10 +30,10 @@ function dpdf(z::Real, ::Type{Val{:logit}})
 end
 
 # logcdf
-logcdf(   z::Real, ::Type{Val{:logit}}) = z - log1pexp(z)
-logccdf(  z::Real, ::Type{Val{:logit}}) =   - log1pexp(z)
+logcdf(   z::Real, ::Type{Val{:logit}}) = -log1pexp(-z)  # z - log1pexp(z)
+logccdf(  z::Real, ::Type{Val{:logit}}) = -log1pexp( z)  #   - log1pexp(z)
 dlogcdf(  z::Real, ::Type{Val{:logit}}) = one(z) - logistic(z)
-dlogccdf( z::Real, ::Type{Val{:logit}}) =         - logistic(z)
+dlogccdf( z::Real, ::Type{Val{:logit}}) =        - logistic(z)
 d2logcdf( z::Real, ::Type{Val{:logit}}) = - pdf(z, Val{:logit})
 d2logccdf(z::Real, ::Type{Val{:logit}}) = - pdf(z, Val{:logit})
 
