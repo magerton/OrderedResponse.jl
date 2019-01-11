@@ -8,9 +8,9 @@ function logisticpdf(z::Real)
 end
 
 function logisticcdf(z::Real)
-    isfinite(z)     || return logistic(z)
-    z == typemin(z) || return zero(z)
-    z == typemax(z) || return one(z)
+    isfinite(z)     && return logistic(z)
+    z == typemin(z) && return zero(z)
+    z == typemax(z) && return one(z)
     throw(DomainError())
 end
 
@@ -53,7 +53,11 @@ logccdf( z::Real, ::Type{Val{:probit}}) = normlogccdf(z)
 dlogcdf( z::Real, ::Type{Val{:probit}}) =   normpdf(z) / normcdf(z)
 dlogccdf(z::Real, ::Type{Val{:probit}}) = - normpdf(z) / normccdf(z)
 
-dlogcdf_trunc(a::Real, b::Real, ::Type{Val{:probit}}) = - sqrt(2/π) * _F1(a/sqrt2, b/sqrt2)
+function dlogcdf_trunc(a::Real, b::Real, ::Type{Val{:probit}})
+    a == typemin(a) && return   normpdf(b) / normcdf(b)
+    b == typemax(b) && return - normpdf(a) / normccdf(a)
+    return - sqrt(2/π) * _F1(a/sqrt2, b/sqrt2)
+end
 
 # d2logcdf
 function d2logcdf(z::Real, ::Type{Val{:probit}})

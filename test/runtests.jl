@@ -10,24 +10,34 @@ using Test
 using CSV
 using LinearAlgebra
 using StatsFuns
-using Distributions
+using Distributions: _F1
 
 include("benchmarks.jl")
 
 # read in data
 # df = CSV.read(joinpath(dirname(pathof(OrderedResponse) * "/data/testdat.csv")))
 
-df = CSV.read("D:/libraries/julia/dev/OrderedResponse" * "/data/testdat.csv")
-
-
-@testset "testing dlogF" begin
-    a, b = (-30.0, -20.5,)
-    F = normcdf(b) - normcdf(a)
-    dlogF  = (normpdf(b) - normpdf(a)) / F  # try using _F1 from truncated/normal.jl
-    dlogF_new = - √(2/π) * Distributions._F1(a/√2, b/√2)
-    @test dlogF ≈ dlogF_new
+@testset "test dlogF for :probit" begin
+    for model in (:probit,:logit,)
+        for a in [-6.0:5.0..., typemin(1.0),]
+            for b in [(max(a,-5)+1):6.0..., typemax(1.0),]
+                FF = OrderedResponse.cdf(b, Val{model}) - OrderedResponse.cdf(a, Val{model})
+                ff = OrderedResponse.pdf(b, Val{model}) - OrderedResponse.pdf(a, Val{model})
+                dlogF  = ff / FF
+                dlogF_new = OrderedResponse.dlogcdf_trunc(a,b,Val{model})
+                @test dlogF ≈ dlogF_new
+                @test dlogF_new != 0.0 || ff == 0.0
+                @test FF > 0
+            end
+        end
+    end
 end
 
+OrderedResponse.logisticcdf(-1)
+OrderedResponse.logisticcdf(1.2)
+
+
+df = CSV.read("D:/libraries/julia/dev/OrderedResponse" * "/data/testdat.csv")
 
 # test functions in "likelihood" file
 include("likelihood.jl")
