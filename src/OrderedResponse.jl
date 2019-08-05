@@ -11,7 +11,7 @@ using StatsBase
 using NLSolversBase
 using Distributions: _F1
 
-function num_categories(y::Vector{<:Integer})
+function num_categories(y::AbstractVector{<:Integer})
     y0, L = extrema(y)
     length(unique(y)) == L - y0 + 1  || throw(error("y must be coded 1:n with all values present"))
     y0 == 1                          || throw(error("y must be coded 1:n with all values present"))
